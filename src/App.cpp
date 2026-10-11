@@ -13,7 +13,7 @@ static sf::ContextSettings createContextSettings()
     settings.minorVersion = 0;
     settings.attributeFlags = sf::ContextSettings::Core;
     settings.depthBits = 24;
-    settings.stencilBits = 8;
+    settings.stencilBits = 8;   
 
     return settings;
 }
@@ -41,7 +41,7 @@ App::App()
     glViewport(0, 0, size.x, size.y);
 
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0.02f, 0.02f, 0.04f, 1.f);
+    glClearColor(0.1f, 0.1f, 0.15f, 1.f);
 }
 
 void App::run()
@@ -80,30 +80,33 @@ void App::processEvents()
     {
         if (event->is<sf::Event::Closed>())
             window.close();
-
-        if (const auto* key = event->getIf<sf::Event::KeyPressed>())
-        {
-            if (key->code == sf::Keyboard::Key::Escape)
-                window.close();
-        }
-
+            
         if (const auto* resized = event->getIf<sf::Event::Resized>())
         {
             glViewport(0, 0, resized->size.x, resized->size.y);
         }
+        
+        if (const auto* key = event->getIf<sf::Event::KeyPressed>())
+        {
+            switch(key->code){
+                case sf::Keyboard::Key::Escape:{
+                    window.close();
+                    break;
+                }
+                default:
+                    break; 
+            }
+        }
     }
 }
 
-void App::update([[maybe_unused]] double dt)
+void App::update(double dt) // executes physics engine update (TODO)
 {
-    // TODO: Advance Simulation by dt when the physics module is implemented.
+    
 }
 
-void App::render()
+void App::render() // executes renderer update (TODO)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // TODO: Draw the simulation using Renderer and Camera when implemented.
-
     window.display();
 }
