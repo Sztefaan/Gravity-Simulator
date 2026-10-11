@@ -3,6 +3,7 @@
 
 #include <SFML/Window.hpp>
 #include <SFML/System/Clock.hpp>
+#include "graphics/Renderer.hpp"
 
 class App
 {
@@ -18,4 +19,5 @@ private:
 
     sf::Window window;
     sf::Clock clock;
+    Renderer renderer;
 };

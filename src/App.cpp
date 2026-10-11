@@ -36,12 +36,8 @@ App::App()
         throw std::runtime_error("OpenGL 4.0 unavailable");
 
     window.setFramerateLimit(60);
-
     const auto size = window.getSize();
-    glViewport(0, 0, size.x, size.y);
-
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(0.02f, 0.02f, 0.04f, 1.f);
+    renderer.init(size.x, size.y);
 }
 
 void App::run()
@@ -78,32 +74,33 @@ void App::processEvents()
 {
     while (auto event = window.pollEvent())
     {
-        if (event->is<sf::Event::Closed>())
+        if (event->is<sf::Event::Closed>()){
+            renderer.shutdown();    
             window.close();
+        }
 
         if (const auto* key = event->getIf<sf::Event::KeyPressed>())
         {
-            if (key->code == sf::Keyboard::Key::Escape)
+            if (key->code == sf::Keyboard::Key::Escape){
                 window.close();
-        }
+                renderer.shutdown();    
+            }
+        } 
 
         if (const auto* resized = event->getIf<sf::Event::Resized>())
         {
-            glViewport(0, 0, resized->size.x, resized->size.y);
+            renderer.resize(resized->size.x, resized->size.y);
         }
     }
 }
 
 void App::update([[maybe_unused]] double dt)
 {
-    // TODO: Advance Simulation by dt when the physics module is implemented.
+    // TODO: Advance Simulation by dt
 }
 
 void App::render()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // TODO: Draw the simulation using Renderer and Camera when implemented.
-
+    renderer.render();
     window.display();
 }
