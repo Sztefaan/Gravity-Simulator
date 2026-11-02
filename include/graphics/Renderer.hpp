@@ -7,6 +7,7 @@
 class Renderer
 {
 public:
+    Renderer(unsigned width, unsigned height);
     void init(unsigned width, unsigned height);
     void resize(unsigned width, unsigned height);
     void render();
@@ -15,5 +16,6 @@ public:
 private:
     Shader shader;
     Mesh triangle;
+    Mesh cube;
     Camera camera;
 };

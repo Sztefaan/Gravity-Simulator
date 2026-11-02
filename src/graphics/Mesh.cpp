@@ -8,8 +8,31 @@ Mesh::~Mesh()
 {
     destroy();
 }
+Mesh::Mesh(Mesh&& o) noexcept{
+    vao = o.vao;
+    vbo = o.vbo;
+    vertexCount = o.vertexCount;
+    primitive = o.primitive;
+    o.vao = 0;
+    o.vbo = 0;
+    o.vertexCount = 0;
+}
+Mesh& Mesh::operator=(Mesh&& o) noexcept{
+    if(this == &o){
+        return *this;
+    }
+    vao = o.vao;
+    vbo = o.vbo;
+    vertexCount = o.vertexCount;
+    primitive = o.primitive;
+    o.vao = 0;
+    o.vbo = 0;
+    o.vertexCount = 0;
+    return *this;
+}
 
-void Mesh::init(const std::vector<Vertex>& vertices)
+
+void Mesh::init(const std::vector<Vertex>& vertices, Primitive primitive)
 {
     if (vertices.empty())
         throw std::runtime_error("Mesh has no vertices");
@@ -17,6 +40,7 @@ void Mesh::init(const std::vector<Vertex>& vertices)
     destroy();
 
     vertexCount = static_cast<int>(vertices.size());
+    this->primitive = primitive;
 
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
@@ -31,29 +55,16 @@ void Mesh::init(const std::vector<Vertex>& vertices)
         GL_STATIC_DRAW
     );
 
-    // Position: location = 0
     glVertexAttribPointer(
         0,
         3,
         GL_FLOAT,
         GL_FALSE,
         sizeof(Vertex),
-        reinterpret_cast<const void*>(offsetof(Vertex, position))
+        (void*)0
     );
 
     glEnableVertexAttribArray(0);
-
-    // Color: location = 1
-    glVertexAttribPointer(
-        1,
-        3,
-        GL_FLOAT,
-        GL_FALSE,
-        sizeof(Vertex),
-        reinterpret_cast<const void*>(offsetof(Vertex, color))
-    );
-
-    glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -63,7 +74,8 @@ void Mesh::draw() const
 {
     glBindVertexArray(vao);
 
-    glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+    const GLenum mode = primitive == Primitive::Lines ? GL_LINES : GL_TRIANGLES;
+    glDrawArrays(mode, 0, vertexCount);
 
     glBindVertexArray(0);
 }

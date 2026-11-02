@@ -2,6 +2,8 @@
 #include <glad/gl.h>
 #include <vector>
 
+Renderer::Renderer(unsigned width, unsigned height) : camera(width, height) {}
+
 void Renderer::init(unsigned width, unsigned height)
 {
     glEnable(GL_DEPTH_TEST);
@@ -15,13 +17,39 @@ void Renderer::init(unsigned width, unsigned height)
     );
 
     const std::vector<Vertex> vertices = {
-        // Position              Color
-        {{-0.8f, -0.6f,  1.0f}, {1.0f, 0.0f, 0.0f}},
-        {{ 0.8f, -0.6f,  0.0f}, {0.0f, 1.0f, 0.0f}},
-        {{ 0.0f,  0.8f, -1.0f}, {0.0f, 0.0f, 1.0f}}
+        // Position
+         {{-1.0f, 0.0f,  0.0f }}, 
+         {{ 1.0f, 0.0f,  0.0f }},
+         {{ 0.0f, 1.0f,  0.0f }}
+    };
+    triangle.init(vertices);
+
+    const Vertex corners[] = {
+         {{-1.0f, -1.0f, -1.0f }},
+         {{ 1.0f, -1.0f, -1.0f }}, 
+         {{ 1.0f,  1.0f, -1.0f }}, 
+         {{-1.0f,  1.0f, -1.0f }}, 
+         {{-1.0f, -1.0f,  1.0f }}, 
+         {{ 1.0f, -1.0f,  1.0f }}, 
+         {{ 1.0f,  1.0f,  1.0f }}, 
+         {{-1.0f,  1.0f,  1.0f }}
     };
 
-    triangle.init(vertices);
+    // Each pair describes one of the cube's twelve edges.
+    const unsigned edges[][2] = {
+        {0, 1}, {1, 2}, {2, 3}, {3, 0},
+        {4, 5}, {5, 6}, {6, 7}, {7, 4},
+        {0, 4}, {1, 5}, {2, 6}, {3, 7}
+    };
+
+    std::vector<Vertex> cubeVertices;
+    cubeVertices.reserve(24);
+    for (const auto& edge : edges)
+    {
+        cubeVertices.push_back(corners[edge[0]]);
+        cubeVertices.push_back(corners[edge[1]]);
+    }
+    cube.init(cubeVertices, Mesh::Primitive::Lines);
 
     resize(width, height);
 }
@@ -44,14 +72,19 @@ void Renderer::render()
 
     shader.use();
 
-    shader.setMat4("uView", camera.getView());
-    shader.setMat4("uProjection", camera.getProjection());
+    shader.setMat4("uView", camera.getViewMatrix());
+    shader.setMat4("uProjection", camera.getProjectionMatrix());
 
+    shader.setVec3("uColor", glm::vec3(1.f, 0.3f, 0.2f));
     triangle.draw();
+    
+    shader.setVec3("uColor", glm::vec3(0.3f, 0.8f, 1.f));
+    cube.draw();
 }
 
 void Renderer::shutdown()
 {
     triangle.destroy();
+    cube.destroy();
     shader.destroy();
 }

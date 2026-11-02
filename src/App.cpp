@@ -5,60 +5,83 @@
 #include <algorithm>
 #include <stdexcept>
 
-static sf::ContextSettings createContextSettings()
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    sf::ContextSettings settings;
+    glViewport(0, 0, width, height);
+}
 
-    settings.majorVersion = 4;
-    settings.minorVersion = 0;
-    settings.attributeFlags = sf::ContextSettings::Core;
-    settings.depthBits = 24;
-    settings.stencilBits = 8;
+// glfw: whenever the mouse moves, this callback is called
+// -------------------------------------------------------
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+{
+    // float xpos = static_cast<float>(xposIn);
+    // float ypos = static_cast<float>(yposIn);
 
-    return settings;
+    // if (firstMouse)
+    // {
+    //     lastX = xpos;
+    //     lastY = ypos;
+    //     firstMouse = false;
+    // }
+
+    // float xoffset = xpos - lastX;
+    // float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+    // lastX = xpos;
+    // lastY = ypos;
+
+//    camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    // camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
 
-App::App()
-    : window(
-        sf::VideoMode({800, 600}),
-        "Gravity simulator",
-        sf::Style::Default,
-        sf::State::Windowed,
-        createContextSettings()
-    )
-{
-    if (!window.setActive(true))
-        throw std::runtime_error("Failed to activate OpenGL context");
-
-    if (!gladLoadGL(sf::Context::getFunction) ||
-        !GLAD_GL_VERSION_4_0)
-        throw std::runtime_error("OpenGL 4.0 unavailable");
-
-    window.setFramerateLimit(60);
-    const auto size = window.getSize();
-    renderer.init(size.x, size.y);
+void App::openGlInit(){
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glfwWindowHint(GLFW_STENCIL_BITS, 8);
 }
 
+App::App() : renderer(appWidth, appHeight){
+    openGlInit();
+    window = glfwCreateWindow(appWidth, appHeight, "Gravity simulator", NULL, NULL);
+    if (window == NULL)
+    {
+        glfwTerminate();
+        throw(std::runtime_error("Failed to create GLFW window"));
+    }
+    glfwMakeContextCurrent(window);
+    if(!gladLoadGL(reinterpret_cast<GLADloadfunc>(glfwGetProcAddress))){
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        throw std::runtime_error("Failed to initialize GLAD");
+    }
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    renderer.init(appWidth, appHeight);
+}
 void App::run()
 {
     constexpr double fixedDt = 1.0 / 120.0;
     constexpr double maxFrameTime = 0.25;
 
     double accumulator = 0.0;
-    clock.restart();
-
-    while (window.isOpen())
+    
+    while (!glfwWindowShouldClose(window))
     {
-        double frameTime = static_cast<double>(clock.restart().asMicroseconds()) / 1'000'000.0;
+        double frameTime = glfwGetTime();
         frameTime = std::min(frameTime, maxFrameTime);
 
         accumulator += frameTime;
 
-        processEvents();
-
-        if (!window.isOpen())
-            break;
+        processInput();
 
         while (accumulator >= fixedDt)
         {
@@ -67,31 +90,16 @@ void App::run()
         }
 
         render();
+        glfwPollEvents();
     }
+    glfwTerminate();
 }
 
-void App::processEvents()
+void App::processInput()
 {
-    while (auto event = window.pollEvent())
-    {
-        if (event->is<sf::Event::Closed>()){
-            renderer.shutdown();    
-            window.close();
-        }
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE)==GLFW_PRESS)
+        glfwSetWindowShouldClose(window,true);
 
-        if (const auto* key = event->getIf<sf::Event::KeyPressed>())
-        {
-            if (key->code == sf::Keyboard::Key::Escape){
-                window.close();
-                renderer.shutdown();    
-            }
-        } 
-
-        if (const auto* resized = event->getIf<sf::Event::Resized>())
-        {
-            renderer.resize(resized->size.x, resized->size.y);
-        }
-    }
 }
 
 void App::update([[maybe_unused]] double dt)
@@ -102,5 +110,6 @@ void App::update([[maybe_unused]] double dt)
 void App::render()
 {
     renderer.render();
-    window.display();
+    glfwSwapBuffers(window);
 }
+

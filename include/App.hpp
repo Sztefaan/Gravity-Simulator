@@ -1,8 +1,7 @@
 
 #pragma once
 
-#include <SFML/Window.hpp>
-#include <SFML/System/Clock.hpp>
+#include <GLFW/glfw3.h>
 #include "graphics/Renderer.hpp"
 
 class App
@@ -11,13 +10,13 @@ public:
     App();
 
     void run();
-
 private:
-    void processEvents();
+    void openGlInit();
+    void processInput();
     void update(double dt);
     void render();
 
-    sf::Window window;
-    sf::Clock clock;
+    int appWidth{1920}, appHeight{1080};
+    GLFWwindow* window;
     Renderer renderer;
 };

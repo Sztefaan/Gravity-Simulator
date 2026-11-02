@@ -1,13 +1,14 @@
 #include "graphics/Shader.hpp"
 
 #include <glad/gl.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 
-static std::string readFile(const std::string& path)
+std::string Shader::readFile(const std::string& path)
 {
     std::ifstream file(path);
 
@@ -131,7 +132,7 @@ void Shader::use() const
     glUseProgram(program);
 }
 
-void Shader::setMat4(const char* name, const float* matrix) const
+void Shader::setMat4(const char* name, const glm::mat4& matrix) const
 {
     GLint location = glGetUniformLocation(program, name);
 
@@ -140,14 +141,14 @@ void Shader::setMat4(const char* name, const float* matrix) const
             std::string("Uniform not found: ") + name
         );
 
-    glUniformMatrix4fv(
-        location,
-        1,
-        GL_FALSE,
-        matrix
-    );
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 }
-
+void Shader::setVec3(const char* name, const glm::vec3& value) const{
+    GLint location = glGetUniformLocation(program, name);
+    if(location<0)
+        throw std::runtime_error("Uniform not found: "+std::string(name));
+    glUniform3fv(location, 1, glm::value_ptr(value));
+}
 void Shader::destroy()
 {
     if (program != 0)
