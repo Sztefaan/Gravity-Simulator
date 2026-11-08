@@ -9,7 +9,6 @@ public:
     void setPosition(const glm::vec3& position);
     void translatePosition(const glm::vec3& offset);
     void setDirection(const glm::vec3& direction);
-    void rotate(const glm::vec3& pivot, const glm::quat& rotation);
     void lookAt(const glm::vec3& target);
 
     void resize(unsigned width, unsigned height);

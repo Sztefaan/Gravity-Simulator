@@ -88,3 +88,6 @@ void Renderer::shutdown()
     cube.destroy();
     shader.destroy();
 }
+Camera& Renderer::getCamera() noexcept{
+    return camera;
+}

@@ -3,7 +3,6 @@
 #include <cmath>
 #include <stdexcept>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/quaternion.hpp>
 
 Camera::Camera(unsigned width, unsigned height, float fov, float nearPlane, float farPlane) : width{width}, height{height}, fov{fov}, nearPlane{nearPlane}, farPlane{farPlane}{
     if(height == 0 || width == 0)
@@ -42,38 +41,26 @@ void Camera::translatePosition(const glm::vec3& offset){
     cameraPosition += offset;
     updateViewMatrix();
 }
-void Camera::setDirection(const glm::vec3& direction){
-    float lengthSquared = glm::dot(direction, direction);
-
-    if (lengthSquared < 1e-12f)
+void Camera::setDirection(const glm::vec3& direction)
+{
+    if (glm::dot(direction, direction) < 1e-12f)
         throw std::runtime_error("Direction must be non-zero");
 
-    glm::vec3 newFront = glm::normalize(direction);
+    cameraFront = glm::normalize(direction);
 
-    glm::quat rotation = glm::rotation(cameraFront, newFront);
+    constexpr glm::vec3 worldUp(0.f, 1.f, 0.f);
+    glm::vec3 right = glm::cross(cameraFront, worldUp);
 
-    cameraUp = glm::normalize(rotation * cameraUp);
-    cameraFront = newFront;
+    if (glm::dot(right, right) < 1e-8f)
+        right = glm::cross(cameraFront, cameraUp);
+
+    right    = glm::normalize(right);
+    cameraUp = glm::cross(right, cameraFront);
 
     updateViewMatrix();
 }
 void Camera::lookAt(const glm::vec3& target){
     setDirection(target-cameraPosition);
-}
-void Camera::rotate(const glm::vec3& pivot, const glm::quat& rotation){
-    float lengthSquared = glm::dot(rotation, rotation);
-
-    if (!std::isfinite(lengthSquared) ||
-        lengthSquared < 1e-12f)
-        throw std::invalid_argument("Invalid rotation");
-
-    glm::quat q = glm::normalize(rotation);
-
-    cameraPosition = pivot + q * (cameraPosition - pivot);
-    cameraFront = glm::normalize(q * cameraFront);
-    cameraUp = glm::normalize(q * cameraUp);
-
-    updateViewMatrix();
 }
 void Camera::setFov(float fov){
     if(fov <= 0.0f || fov>= 180.0f)

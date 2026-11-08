@@ -12,6 +12,7 @@ public:
     void resize(unsigned width, unsigned height);
     void render();
     void shutdown();
+    Camera& getCamera() noexcept;
 
 private:
     Shader shader;

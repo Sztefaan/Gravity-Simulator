@@ -3,7 +3,7 @@
 
 #include <GLFW/glfw3.h>
 #include "graphics/Renderer.hpp"
-
+#include "graphics/CameraController.hpp"
 class App
 {
 public:
@@ -19,4 +19,5 @@ private:
     int appWidth{1920}, appHeight{1080};
     GLFWwindow* window;
     Renderer renderer;
+    CameraController cameraController;
 };

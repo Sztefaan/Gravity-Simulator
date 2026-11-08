@@ -7,7 +7,13 @@
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+    if (width == 0 || height == 0) return;
+    
     glViewport(0, 0, width, height);
+
+    auto* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
+    if (camera)
+        camera->resize(width, height);
 }
 
 // glfw: whenever the mouse moves, this callback is called
@@ -48,7 +54,7 @@ void App::openGlInit(){
     glfwWindowHint(GLFW_STENCIL_BITS, 8);
 }
 
-App::App() : renderer(appWidth, appHeight){
+App::App() : renderer(appWidth, appHeight), cameraController(renderer.getCamera()){
     openGlInit();
     window = glfwCreateWindow(appWidth, appHeight, "Gravity simulator", NULL, NULL);
     if (window == NULL)
@@ -92,6 +98,8 @@ void App::run()
         render();
         glfwPollEvents();
     }
+    glfwDestroyWindow(window);
+    renderer.shutdown();
     glfwTerminate();
 }
 
