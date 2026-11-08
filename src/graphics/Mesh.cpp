@@ -21,6 +21,7 @@ Mesh& Mesh::operator=(Mesh&& o) noexcept{
     if(this == &o){
         return *this;
     }
+    destroy();
     vao = o.vao;
     vbo = o.vbo;
     vertexCount = o.vertexCount;
@@ -55,16 +56,17 @@ void Mesh::init(const std::vector<Vertex>& vertices, Primitive primitive)
         GL_STATIC_DRAW
     );
 
-    glVertexAttribPointer(
-        0,
-        3,
-        GL_FLOAT,
-        GL_FALSE,
-        sizeof(Vertex),
-        (void*)0
-    );
-
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void*)offsetof(Vertex, position));
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void*)offsetof(Vertex, normal));
+    glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void*)offsetof(Vertex, u));
+    glEnableVertexAttribArray(2);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

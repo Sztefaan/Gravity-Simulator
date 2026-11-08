@@ -4,6 +4,8 @@
 #include <GLFW/glfw3.h>
 #include "graphics/Renderer.hpp"
 #include "graphics/CameraController.hpp"
+#include <vector>
+
 class App
 {
 public:
@@ -20,4 +22,5 @@ private:
     GLFWwindow* window;
     Renderer renderer;
     CameraController cameraController;
+    std::vector<RenderBody> renderBodies;
 };

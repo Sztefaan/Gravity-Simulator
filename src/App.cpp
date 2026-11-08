@@ -72,6 +72,17 @@ App::App() : renderer(appWidth, appHeight), cameraController(renderer.getCamera(
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
     renderer.init(appWidth, appHeight);
+    
+    for (unsigned i = 0; i < 5; ++i)
+    {
+        RenderBody b;
+        b.position = glm::vec3(-5.0f + i * 2.5f, 0.0f, 0.0f);
+        b.radius   = 1.0f;
+        b.color    = glm::vec3((i + 1) * 0.2f);
+        b.detail      = i;
+        renderBodies.push_back(b);
+    }
+
 }
 void App::run()
 {
@@ -117,7 +128,7 @@ void App::update([[maybe_unused]] double dt)
 
 void App::render()
 {
-    renderer.render();
+    renderer.render(renderBodies);
     glfwSwapBuffers(window);
 }
 

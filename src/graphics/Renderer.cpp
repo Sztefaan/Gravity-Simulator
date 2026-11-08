@@ -1,6 +1,11 @@
 #include "graphics/Renderer.hpp"
-#include <glad/gl.h>
+#include "graphics/MeshGenerator.hpp"
+
 #include <vector>
+#include <glad/gl.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 Renderer::Renderer(unsigned width, unsigned height) : camera(width, height) {}
 
@@ -12,45 +17,15 @@ void Renderer::init(unsigned width, unsigned height)
     glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
 
     shader.load(
-        "assets/shaders/triangle.vert",
-        "assets/shaders/triangle.frag"
+        "assets/shaders/sphere.vert",
+        "assets/shaders/sphere.frag"
     );
 
-    const std::vector<Vertex> vertices = {
-        // Position
-         {{-1.0f, 0.0f,  0.0f }}, 
-         {{ 1.0f, 0.0f,  0.0f }},
-         {{ 0.0f, 1.0f,  0.0f }}
-    };
-    triangle.init(vertices);
-
-    const Vertex corners[] = {
-         {{-1.0f, -1.0f, -1.0f }},
-         {{ 1.0f, -1.0f, -1.0f }}, 
-         {{ 1.0f,  1.0f, -1.0f }}, 
-         {{-1.0f,  1.0f, -1.0f }}, 
-         {{-1.0f, -1.0f,  1.0f }}, 
-         {{ 1.0f, -1.0f,  1.0f }}, 
-         {{ 1.0f,  1.0f,  1.0f }}, 
-         {{-1.0f,  1.0f,  1.0f }}
-    };
-
-    // Each pair describes one of the cube's twelve edges.
-    const unsigned edges[][2] = {
-        {0, 1}, {1, 2}, {2, 3}, {3, 0},
-        {4, 5}, {5, 6}, {6, 7}, {7, 4},
-        {0, 4}, {1, 5}, {2, 6}, {3, 7}
-    };
-
-    std::vector<Vertex> cubeVertices;
-    cubeVertices.reserve(24);
-    for (const auto& edge : edges)
-    {
-        cubeVertices.push_back(corners[edge[0]]);
-        cubeVertices.push_back(corners[edge[1]]);
-    }
-    cube.init(cubeVertices, Mesh::Primitive::Lines);
-
+    spheres[0] = MeshGenerator::generateSphere(1, 12, 6);
+    spheres[1] = MeshGenerator::generateSphere(1, 24, 12);
+    spheres[2] = MeshGenerator::generateSphere(1, 36, 18);
+    spheres[3] = MeshGenerator::generateSphere(1, 64, 32);
+    spheres[4] = MeshGenerator::generateSphere(1, 128, 64);
     resize(width, height);
 }
 
@@ -66,26 +41,30 @@ void Renderer::resize(unsigned width, unsigned height)
     camera.resize(width, height);
 }
 
-void Renderer::render()
+void Renderer::render(const std::vector<RenderBody>& bodies)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     shader.use();
-
     shader.setMat4("uView", camera.getViewMatrix());
     shader.setMat4("uProjection", camera.getProjectionMatrix());
 
-    shader.setVec3("uColor", glm::vec3(1.f, 0.3f, 0.2f));
-    triangle.draw();
-    
-    shader.setVec3("uColor", glm::vec3(0.3f, 0.8f, 1.f));
-    cube.draw();
+    for (const auto& b : bodies)
+    {
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), b.position);
+        model = glm::scale(model, glm::vec3(b.radius));
+
+        shader.setMat4("uModel", model);
+        shader.setVec3("uColor", b.color);
+        spheres[b.detail].draw();
+    }
 }
 
 void Renderer::shutdown()
 {
-    triangle.destroy();
-    cube.destroy();
+    for(auto& x : spheres){
+        x.destroy();
+    }
     shader.destroy();
 }
 Camera& Renderer::getCamera() noexcept{
