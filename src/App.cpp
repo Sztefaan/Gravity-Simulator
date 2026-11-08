@@ -1,6 +1,7 @@
 
 #include "App.hpp"
 
+#include <cmath>
 #include <glad/gl.h>
 #include <algorithm>
 #include <stdexcept>
@@ -8,40 +9,74 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     if (width == 0 || height == 0) return;
-    
+
     glViewport(0, 0, width, height);
 
-    auto* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
-    if (camera)
-        camera->resize(width, height);
+    if (auto* app = static_cast<App*>(glfwGetWindowUserPointer(window)))
+        app->onResize(width, height);
+}
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (auto* app = static_cast<App*>(glfwGetWindowUserPointer(window)))
+        app->onMouseButton(button, action);
 }
 
-// glfw: whenever the mouse moves, this callback is called
-// -------------------------------------------------------
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+void cursor_pos_callback(GLFWwindow* window, double x, double y)
 {
-    // float xpos = static_cast<float>(xposIn);
-    // float ypos = static_cast<float>(yposIn);
+    if (auto* app = static_cast<App*>(glfwGetWindowUserPointer(window)))
+        app->onCursorPos(x, y);
+}
 
-    // if (firstMouse)
-    // {
-    //     lastX = xpos;
-    //     lastY = ypos;
-    //     firstMouse = false;
-    // }
+void App::onMouseButton(int button, int action)
+{
+    if (button != GLFW_MOUSE_BUTTON_LEFT) return;
 
-    // float xoffset = xpos - lastX;
-    // float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    if (action == GLFW_PRESS)
+    {
+        drag = true;
+        firstDrag = true;
+    }
+    else if (action == GLFW_RELEASE)
+    {
+        drag = false;
+    }
+}
 
-    // lastX = xpos;
-    // lastY = ypos;
+void App::onCursorPos(double x, double y)
+{
+    if (!drag) return;
 
-//    camera.ProcessMouseMovement(xoffset, yoffset);
+    if (firstDrag)
+    {
+        lastX = x;
+        lastY = y;
+        firstDrag = false;
+        return;
+    }
+
+    constexpr float sensitivity = 0.005f;
+    float dx = static_cast<float>(x - lastX);
+    float dy = static_cast<float>(y - lastY);
+    lastX = x;
+    lastY = y;
+
+    cameraController.changeAngle(dx * sensitivity, dy * sensitivity);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    // camera.ProcessMouseScroll(static_cast<float>(yoffset));
+    if (auto* app = static_cast<App*>(glfwGetWindowUserPointer(window)))
+        app->onScroll(yoffset);
+}
+
+void App::onScroll(double yoffset)
+{
+    cameraController.changeDistance(static_cast<float>(std::pow(1.1, -yoffset)));
+}
+
+void App::onResize(int width, int height)
+{
+    renderer.getCamera().resize(width, height);
 }
 
 
@@ -63,13 +98,15 @@ App::App() : renderer(appWidth, appHeight), cameraController(renderer.getCamera(
         throw(std::runtime_error("Failed to create GLFW window"));
     }
     glfwMakeContextCurrent(window);
+    glfwSetWindowUserPointer(window, this);   
     if(!gladLoadGL(reinterpret_cast<GLADloadfunc>(glfwGetProcAddress))){
         glfwDestroyWindow(window);
         glfwTerminate();
         throw std::runtime_error("Failed to initialize GLAD");
     }
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_pos_callback);
     glfwSetScrollCallback(window, scroll_callback);
     renderer.init(appWidth, appHeight);
     
@@ -90,15 +127,15 @@ void App::run()
     constexpr double maxFrameTime = 0.25;
 
     double accumulator = 0.0;
-    
+    double previous = glfwGetTime();
     while (!glfwWindowShouldClose(window))
     {
         double frameTime = glfwGetTime();
-        frameTime = std::min(frameTime, maxFrameTime);
-
+        frameTime = std::min(frameTime - previous, maxFrameTime);
+        previous = frameTime;
         accumulator += frameTime;
 
-        processInput();
+        processInput(frameTime);
 
         while (accumulator >= fixedDt)
         {
@@ -114,10 +151,25 @@ void App::run()
     glfwTerminate();
 }
 
-void App::processInput()
+void App::processInput(double dt)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE)==GLFW_PRESS)
         glfwSetWindowShouldClose(window,true);
+
+    glm::vec3 dir(0.f);
+    if(glfwGetKey(window, GLFW_KEY_W)==GLFW_PRESS)
+        dir.z += 1.0f;
+    if(glfwGetKey(window, GLFW_KEY_S)==GLFW_PRESS)
+        dir.z -= 1.0f;
+    if(glfwGetKey(window, GLFW_KEY_D)==GLFW_PRESS)
+        dir.x += 1.0f;
+    if(glfwGetKey(window, GLFW_KEY_A)==GLFW_PRESS)
+        dir.x -= 1.0f;
+    if(glfwGetKey(window, GLFW_KEY_SPACE)==GLFW_PRESS)
+        dir.y += 1.0f;
+    if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)==GLFW_PRESS)
+        dir.y -= 1.0f;
+    cameraController.moveTarget(dir, static_cast<float>(dt));
 
 }
 
