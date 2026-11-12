@@ -47,7 +47,7 @@ target_include_directories(glad PUBLIC
 
 # Application
 add_executable(${PROJECT_NAME}
-    src/main.cpp
+    main.cpp
     src/App.cpp
 
     src/graphics/Camera.cpp
@@ -55,14 +55,23 @@ add_executable(${PROJECT_NAME}
     src/graphics/Renderer.cpp
     src/graphics/Shader.cpp
     src/graphics/Mesh.cpp
+    src/graphics/MeshGenerator.cpp
 
+    src/physics/Gravity.cpp
+    src/physics/Simulation.cpp
+    
+    
     include/App.hpp
+    
     include/graphics/Camera.hpp
     include/graphics/CameraController.hpp
     include/graphics/Renderer.hpp
     include/graphics/Shader.hpp
     include/graphics/MeshGenerator.hpp
-    src/graphics/MeshGenerator.cpp
+
+    include/physics/Body.hpp 
+    include/physics/Gravity.hpp
+    include/physics/Simulation.hpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

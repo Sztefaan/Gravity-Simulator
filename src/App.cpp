@@ -110,7 +110,7 @@ App::App() : renderer(appWidth, appHeight), cameraController(renderer.getCamera(
     glfwSetScrollCallback(window, scroll_callback);
     renderer.init(appWidth, appHeight);
     
-    for (unsigned i = 0; i < 5; ++i)
+    for (unsigned i = 0; i < 5; ++i) // temporary RenderBody generation for testing purposes 
     {
         RenderBody b;
         b.position = glm::vec3(-5.0f + i * 2.5f, 0.0f, 0.0f);
