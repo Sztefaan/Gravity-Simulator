@@ -132,7 +132,7 @@ void App::run()
     {
         double frameTime = glfwGetTime();
         frameTime = std::min(frameTime - previous, maxFrameTime);
-        previous = frameTime;
+        previous = glfwGetTime();
         accumulator += frameTime;
 
         processInput(frameTime);
