@@ -9,5 +9,6 @@ public:
     // Gravity(double G, double eps);
     void computeAcceleration(std::vector<Body>& bodies) const;
 private:
-    const float G = 6.743e-11;
+    const double G = 6.674e-11;
+    const double EPS = 1e-3;
 };
