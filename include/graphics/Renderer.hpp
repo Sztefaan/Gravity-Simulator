@@ -12,6 +12,10 @@ struct RenderBody
     glm::vec3 color{1.0f};
     unsigned detail = 0; 
 };
+// struct RenderStyle{
+//     glm::vec3 color{1.0f};
+//     unsigned detail = 0; 
+// };
 
 class Renderer
 {

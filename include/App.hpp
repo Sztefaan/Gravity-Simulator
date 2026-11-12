@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include "graphics/Renderer.hpp"
 #include "graphics/CameraController.hpp"
+#include "physics/Simulation.hpp"
 #include <vector>
 
 class App
@@ -30,4 +31,7 @@ private:
     Renderer renderer;
     CameraController cameraController;
     std::vector<RenderBody> renderBodies;
+    
+    Simulation simulation;
+    
 };

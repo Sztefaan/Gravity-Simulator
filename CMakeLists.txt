@@ -59,7 +59,7 @@ add_executable(${PROJECT_NAME}
 
     src/physics/Gravity.cpp
     src/physics/Simulation.cpp
-    
+    src/physics/Integrator.cpp
     
     include/App.hpp
     
@@ -72,6 +72,7 @@ add_executable(${PROJECT_NAME}
     include/physics/Body.hpp 
     include/physics/Gravity.hpp
     include/physics/Simulation.hpp
+    include/physics/Integrator.hpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

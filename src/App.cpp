@@ -1,7 +1,6 @@
 
 #include "App.hpp"
 
-#include <cmath>
 #include <glad/gl.h>
 #include <algorithm>
 #include <stdexcept>
@@ -175,7 +174,7 @@ void App::processInput(double dt)
 
 void App::update([[maybe_unused]] double dt)
 {
-    // TODO: Advance Simulation by dt
+    simulation.step(dt);
 }
 
 void App::render()
