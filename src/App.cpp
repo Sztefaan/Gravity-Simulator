@@ -1,68 +1,141 @@
 
 #include "App.hpp"
 
+#include <cmath>
 #include <glad/gl.h>
 #include <algorithm>
 #include <stdexcept>
 
-static sf::ContextSettings createContextSettings()
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    sf::ContextSettings settings;
+    if (width == 0 || height == 0) return;
 
-    settings.majorVersion = 4;
-    settings.minorVersion = 0;
-    settings.attributeFlags = sf::ContextSettings::Core;
-    settings.depthBits = 24;
-    settings.stencilBits = 8;   
+    glViewport(0, 0, width, height);
 
-    return settings;
+    if (auto* app = static_cast<App*>(glfwGetWindowUserPointer(window)))
+        app->onResize(width, height);
+}
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (auto* app = static_cast<App*>(glfwGetWindowUserPointer(window)))
+        app->onMouseButton(button, action);
+}
+
+void cursor_pos_callback(GLFWwindow* window, double x, double y)
+{
+    if (auto* app = static_cast<App*>(glfwGetWindowUserPointer(window)))
+        app->onCursorPos(x, y);
+}
+
+void App::onMouseButton(int button, int action)
+{
+    if (button != GLFW_MOUSE_BUTTON_LEFT) return;
+
+    if (action == GLFW_PRESS)
+    {
+        drag = true;
+        firstDrag = true;
+    }
+    else if (action == GLFW_RELEASE)
+    {
+        drag = false;
+    }
+}
+
+void App::onCursorPos(double x, double y)
+{
+    if (!drag) return;
+
+    if (firstDrag)
+    {
+        lastX = x;
+        lastY = y;
+        firstDrag = false;
+        return;
+    }
+
+    constexpr float sensitivity = 0.005f;
+    float dx = static_cast<float>(x - lastX);
+    float dy = static_cast<float>(y - lastY);
+    lastX = x;
+    lastY = y;
+
+    cameraController.changeAngle(dx * sensitivity, dy * sensitivity);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    if (auto* app = static_cast<App*>(glfwGetWindowUserPointer(window)))
+        app->onScroll(yoffset);
+}
+
+void App::onScroll(double yoffset)
+{
+    cameraController.changeDistance(static_cast<float>(std::pow(1.1, -yoffset)));
+}
+
+void App::onResize(int width, int height)
+{
+    renderer.getCamera().resize(width, height);
 }
 
 
-App::App()
-    : window(
-        sf::VideoMode({800, 600}),
-        "Gravity simulator",
-        sf::Style::Default,
-        sf::State::Windowed,
-        createContextSettings()
-    )
-{
-    if (!window.setActive(true))
-        throw std::runtime_error("Failed to activate OpenGL context");
-
-    if (!gladLoadGL(sf::Context::getFunction) ||
-        !GLAD_GL_VERSION_4_0)
-        throw std::runtime_error("OpenGL 4.0 unavailable");
-
-    window.setFramerateLimit(60);
-
-    const auto size = window.getSize();
-    glViewport(0, 0, size.x, size.y);
-
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(0.1f, 0.1f, 0.15f, 1.f);
+void App::openGlInit(){
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glfwWindowHint(GLFW_STENCIL_BITS, 8);
 }
 
+App::App() : renderer(appWidth, appHeight), cameraController(renderer.getCamera()){
+    openGlInit();
+    window = glfwCreateWindow(appWidth, appHeight, "Gravity simulator", NULL, NULL);
+    if (window == NULL)
+    {
+        glfwTerminate();
+        throw(std::runtime_error("Failed to create GLFW window"));
+    }
+    glfwMakeContextCurrent(window);
+    glfwSetWindowUserPointer(window, this);   
+    if(!gladLoadGL(reinterpret_cast<GLADloadfunc>(glfwGetProcAddress))){
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        throw std::runtime_error("Failed to initialize GLAD");
+    }
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_pos_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    renderer.init(appWidth, appHeight);
+    
+    for (unsigned i = 0; i < 5; ++i)
+    {
+        RenderBody b;
+        b.position = glm::vec3(-5.0f + i * 2.5f, 0.0f, 0.0f);
+        b.radius   = 1.0f;
+        b.color    = glm::vec3((i + 1) * 0.2f);
+        b.detail      = i;
+        renderBodies.push_back(b);
+    }
+
+}
 void App::run()
 {
     constexpr double fixedDt = 1.0 / 120.0;
     constexpr double maxFrameTime = 0.25;
 
     double accumulator = 0.0;
-    clock.restart();
-
-    while (window.isOpen())
+    double previous = glfwGetTime();
+    while (!glfwWindowShouldClose(window))
     {
-        double frameTime = static_cast<double>(clock.restart().asMicroseconds()) / 1'000'000.0;
-        frameTime = std::min(frameTime, maxFrameTime);
-
+        double frameTime = glfwGetTime();
+        frameTime = std::min(frameTime - previous, maxFrameTime);
+        previous = frameTime;
         accumulator += frameTime;
 
-        processEvents();
-
-        if (!window.isOpen())
-            break;
+        processInput(frameTime);
 
         while (accumulator >= fixedDt)
         {
@@ -71,42 +144,43 @@ void App::run()
         }
 
         render();
+        glfwPollEvents();
     }
+    glfwDestroyWindow(window);
+    renderer.shutdown();
+    glfwTerminate();
 }
 
-void App::processEvents()
+void App::processInput(double dt)
 {
-    while (auto event = window.pollEvent())
-    {
-        if (event->is<sf::Event::Closed>())
-            window.close();
-            
-        if (const auto* resized = event->getIf<sf::Event::Resized>())
-        {
-            glViewport(0, 0, resized->size.x, resized->size.y);
-        }
-        
-        if (const auto* key = event->getIf<sf::Event::KeyPressed>())
-        {
-            switch(key->code){
-                case sf::Keyboard::Key::Escape:{
-                    window.close();
-                    break;
-                }
-                default:
-                    break; 
-            }
-        }
-    }
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE)==GLFW_PRESS)
+        glfwSetWindowShouldClose(window,true);
+
+    glm::vec3 dir(0.f);
+    if(glfwGetKey(window, GLFW_KEY_W)==GLFW_PRESS)
+        dir.z += 1.0f;
+    if(glfwGetKey(window, GLFW_KEY_S)==GLFW_PRESS)
+        dir.z -= 1.0f;
+    if(glfwGetKey(window, GLFW_KEY_D)==GLFW_PRESS)
+        dir.x += 1.0f;
+    if(glfwGetKey(window, GLFW_KEY_A)==GLFW_PRESS)
+        dir.x -= 1.0f;
+    if(glfwGetKey(window, GLFW_KEY_SPACE)==GLFW_PRESS)
+        dir.y += 1.0f;
+    if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)==GLFW_PRESS)
+        dir.y -= 1.0f;
+    cameraController.moveTarget(dir, static_cast<float>(dt));
+
 }
 
-void App::update(double dt) // executes physics engine update (TODO)
+void App::update([[maybe_unused]] double dt)
 {
-    
+    // TODO: Advance Simulation by dt
 }
 
-void App::render() // executes renderer update (TODO)
+void App::render()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    window.display();
+    renderer.render(renderBodies);
+    glfwSwapBuffers(window);
 }
+
